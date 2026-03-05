@@ -50,6 +50,6 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          projectName: 'rain-monitor'
+          projectName: 'antweather'
           directory: 'frontend/dist'
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
