@@ -15,7 +15,7 @@ export default function Layout() {
     <div className="min-h-screen bg-gray-900 text-gray-100 flex flex-col md:flex-row">
       {/* Mobile header */}
       <header className="md:hidden flex items-center justify-between bg-gray-800 border-b border-gray-700 px-4 py-3">
-        <h1 className="text-lg font-bold text-blue-400">Rain Monitor</h1>
+        <h1 className="text-lg font-bold text-blue-400">antWeather</h1>
         <button
           onClick={() => setMenuOpen(!menuOpen)}
           className="text-gray-300 p-1"
@@ -55,7 +55,7 @@ export default function Layout() {
 
       {/* Desktop sidebar */}
       <nav className="hidden md:flex w-56 bg-gray-800 border-r border-gray-700 p-4 flex-col gap-1 shrink-0">
-        <h1 className="text-lg font-bold mb-4 text-blue-400">Rain Monitor</h1>
+        <h1 className="text-lg font-bold mb-4 text-blue-400">antWeather</h1>
         {links.map((l) => (
           <NavLink
             key={l.to}
