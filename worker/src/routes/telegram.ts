@@ -71,10 +71,13 @@ export async function postWebhook(
             }
 
             // Handle @botusername mentions — weather questions via Gemini
+            console.log(`[DEBUG] GEMINI_API_KEY set: ${!!env.GEMINI_API_KEY}, BOT_USERNAME set: ${!!env.TELEGRAM_BOT_USERNAME}, text: "${text}"`);
             if (env.GEMINI_API_KEY && env.TELEGRAM_BOT_USERNAME) {
                 const botMention = `@${env.TELEGRAM_BOT_USERNAME.toLowerCase()}`;
+                console.log(`[DEBUG] Looking for "${botMention}" in "${text.toLowerCase()}"`);
                 if (text.toLowerCase().includes(botMention)) {
                     const userQuery = text.replace(new RegExp(`@${env.TELEGRAM_BOT_USERNAME}`, "gi"), "").trim();
+                    console.log(`[DEBUG] userQuery: "${userQuery}"`);
                     if (userQuery) {
                         console.log(`Gemini mention from ${chatName}: "${userQuery}"`);
                         const result = await fullCheck(env);
