@@ -34,6 +34,22 @@ export default function Captures() {
     }
   };
 
+  const groupByDate = (captures: Capture[]) => {
+    const groups: Record<string, Capture[]> = {};
+    for (const c of captures) {
+      const dateKey = new Date(c.checked_at).toLocaleDateString("en-SG", {
+        timeZone: "Asia/Singapore",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        weekday: "short",
+      });
+      if (!groups[dateKey]) groups[dateKey] = [];
+      groups[dateKey].push(c);
+    }
+    return Object.entries(groups);
+  };
+
   return (
     <div className="space-y-6">
       <h2 className="text-xl font-bold">Captures</h2>
@@ -64,28 +80,39 @@ export default function Captures() {
           <p className="text-gray-400 text-sm">
             {data.total} total captures
           </p>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {data.captures.map((c) => (
-              <div
-                key={c.id}
-                onClick={() => setViewId(c.id)}
-                className="bg-gray-800 rounded-lg overflow-hidden cursor-pointer hover:ring-2 hover:ring-blue-500 transition-all"
-              >
-                <img
-                  src={`${API_BASE}/api/captures/${c.id}/image`}
-                  alt={`Capture ${c.id}`}
-                  className="w-full aspect-square object-cover"
-                  loading="lazy"
-                />
-                <div className="p-3 space-y-1">
-                  <p className="text-xs text-gray-400">
-                    {new Date(c.checked_at).toLocaleString("en-SG", {
-                      timeZone: "Asia/Singapore",
-                    })}
-                  </p>
-                  <p className="text-sm">
-                    {c.max_mm} mm &middot; {stationCount(c.stations)} stations
-                  </p>
+          <div className="space-y-6">
+            {groupByDate(data.captures).map(([date, captures]) => (
+              <div key={date}>
+                <h3 className="text-sm font-semibold text-gray-400 mb-3 sticky top-0 bg-gray-900 py-2 z-10">
+                  {date} &middot; {captures.length} capture{captures.length !== 1 && "s"}
+                </h3>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {captures.map((c) => (
+                    <div
+                      key={c.id}
+                      onClick={() => setViewId(c.id)}
+                      className="bg-gray-800 rounded-lg overflow-hidden cursor-pointer hover:ring-2 hover:ring-blue-500 transition-all"
+                    >
+                      <img
+                        src={`${API_BASE}/api/captures/${c.id}/image`}
+                        alt={`Capture ${c.id}`}
+                        className="w-full aspect-square object-cover"
+                        loading="lazy"
+                      />
+                      <div className="p-3 space-y-1">
+                        <p className="text-xs text-gray-400">
+                          {new Date(c.checked_at).toLocaleString("en-SG", {
+                            timeZone: "Asia/Singapore",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </p>
+                        <p className="text-sm">
+                          {c.max_mm} mm &middot; {stationCount(c.stations)} stations
+                        </p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             ))}
