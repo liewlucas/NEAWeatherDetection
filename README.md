@@ -1,4 +1,4 @@
-# antWeather (NEA Rain Monitor)
+# 🐜🌦️antWeather (NEA Rain Monitor)
 
 A full-stack, live weather radar application built to monitor rainfall in Singapore using the NEA (National Environment Agency) API. The application provides a responsive web dashboard to view live radar maps, an AI-powered Telegram bot for conversational weather queries, and automatically sends alerts, radar snapshots, and forecast briefings to registered Telegram groups when rain is detected in your specified region.
 
