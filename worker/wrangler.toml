@@ -3,7 +3,7 @@ main = "src/index.ts"
 compatibility_date = "2024-12-01"
 
 [triggers]
-crons = ["*/5 * * * *"]
+crons = ["*/5 * * * *", "0 23,11 * * *"]
 
 [[d1_databases]]
 binding = "DB"
@@ -24,6 +24,9 @@ CAPTURE_FILE_PATTERN = "{year}{month}{day}_{hour}{minute}_rain"
 ALERT_COOLDOWN_MIN = "30"
 RADAR_CLEAR_SIZE_THRESHOLD = "15000"
 
+TELEGRAM_BOT_USERNAME = "antWeather_Bot"
+
 # Secrets (set via `wrangler secret put`):
 # TELEGRAM_BOT_TOKEN
 # TELEGRAM_CHAT_ID
+# GEMINI_API_KEY

@@ -6,6 +6,7 @@ import { json } from "./router";
 
 import { addRegisteredChat } from "../services/chat-svc";
 import { askGemini } from "../services/gemini-svc";
+import { fetchForecast } from "../services/nea-client";
 
 async function sendTelegramMessage(env: Env, chatId: string, text: string): Promise<void> {
     if (!env.TELEGRAM_BOT_TOKEN) return;
@@ -71,17 +72,16 @@ export async function postWebhook(
             }
 
             // Handle @botusername mentions — weather questions via Gemini
-            console.log(`[DEBUG] GEMINI_API_KEY set: ${!!env.GEMINI_API_KEY}, BOT_USERNAME set: ${!!env.TELEGRAM_BOT_USERNAME}, text: "${text}"`);
             if (env.GEMINI_API_KEY && env.TELEGRAM_BOT_USERNAME) {
                 const botMention = `@${env.TELEGRAM_BOT_USERNAME.toLowerCase()}`;
-                console.log(`[DEBUG] Looking for "${botMention}" in "${text.toLowerCase()}"`);
                 if (text.toLowerCase().includes(botMention)) {
                     const userQuery = text.replace(new RegExp(`@${env.TELEGRAM_BOT_USERNAME}`, "gi"), "").trim();
-                    console.log(`[DEBUG] userQuery: "${userQuery}"`);
                     if (userQuery) {
-                        console.log(`Gemini mention from ${chatName}: "${userQuery}"`);
-                        const result = await fullCheck(env);
-                        const reply = await askGemini(env, userQuery, result);
+                        const [result, forecast] = await Promise.all([
+                            fullCheck(env),
+                            fetchForecast(),
+                        ]);
+                        const reply = await askGemini(env, userQuery, result, forecast);
                         await sendTelegramMessage(env, chatId, reply);
                     }
                 }

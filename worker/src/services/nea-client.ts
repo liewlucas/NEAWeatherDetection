@@ -105,3 +105,117 @@ export async function fetchRadarImage(): Promise<RadarResult> {
   console.warn("fetchRadarImage: no valid image found in last 30 minutes");
   return { imageBytes: null, timestamp: null };
 }
+
+// ── Forecast types ──
+
+export interface TwoHourForecast {
+  area: string;
+  forecast: string;
+  validStart: string;
+  validEnd: string;
+}
+
+export interface FourDayForecast {
+  date: string;
+  forecast: string;
+  temperature: { low: number; high: number };
+  humidity: { low: number; high: number };
+  wind: { speed: { low: number; high: number }; direction: string };
+}
+
+export interface TwentyFourHourPeriod {
+  start: string;
+  end: string;
+  east: string;
+}
+
+export interface ForecastData {
+  twoHour: TwoHourForecast | null;
+  fourDay: FourDayForecast[];
+  twentyFourHour: { general: string; periods: TwentyFourHourPeriod[] } | null;
+  fetchedAt: string;
+}
+
+export async function fetchForecast(): Promise<ForecastData> {
+  const result: ForecastData = {
+    twoHour: null,
+    fourDay: [],
+    twentyFourHour: null,
+    fetchedAt: new Date().toISOString(),
+  };
+
+  // Fetch all three in parallel
+  const [twoHourRes, fourDayRes, twentyFourRes] = await Promise.allSettled([
+    fetch("https://api.data.gov.sg/v1/environment/2-hour-weather-forecast"),
+    fetch("https://api.data.gov.sg/v1/environment/4-day-weather-forecast"),
+    fetch("https://api.data.gov.sg/v1/environment/24-hour-weather-forecast"),
+  ]);
+
+  // 2-hour forecast — find Changi area
+  if (twoHourRes.status === "fulfilled" && twoHourRes.value.ok) {
+    try {
+      const data: any = await twoHourRes.value.json();
+      const item = data?.items?.[0];
+      if (item) {
+        const changi = item.forecasts?.find(
+          (f: any) => f.area?.toLowerCase() === "changi"
+        );
+        if (changi) {
+          result.twoHour = {
+            area: changi.area,
+            forecast: changi.forecast,
+            validStart: item.valid_period?.start || "",
+            validEnd: item.valid_period?.end || "",
+          };
+        }
+      }
+    } catch (err) {
+      console.error("2-hour forecast parse failed:", err);
+    }
+  }
+
+  // 4-day forecast
+  if (fourDayRes.status === "fulfilled" && fourDayRes.value.ok) {
+    try {
+      const data: any = await fourDayRes.value.json();
+      const forecasts = data?.items?.[0]?.forecasts;
+      if (Array.isArray(forecasts)) {
+        result.fourDay = forecasts.map((f: any) => ({
+          date: f.date,
+          forecast: f.forecast,
+          temperature: f.temperature || { low: 0, high: 0 },
+          humidity: f.relative_humidity || { low: 0, high: 0 },
+          wind: {
+            speed: f.wind?.speed || { low: 0, high: 0 },
+            direction: f.wind?.direction || "",
+          },
+        }));
+      }
+    } catch (err) {
+      console.error("4-day forecast parse failed:", err);
+    }
+  }
+
+  // 24-hour forecast — extract East region (covers Changi)
+  if (twentyFourRes.status === "fulfilled" && twentyFourRes.value.ok) {
+    try {
+      const data: any = await twentyFourRes.value.json();
+      const item = data?.items?.[0];
+      if (item) {
+        const periods: TwentyFourHourPeriod[] = (item.periods || []).map((p: any) => ({
+          start: p.time?.start || "",
+          end: p.time?.end || "",
+          east: p.regions?.east || "",
+        }));
+        result.twentyFourHour = {
+          general: item.general?.forecast || "",
+          periods,
+        };
+      }
+    } catch (err) {
+      console.error("24-hour forecast parse failed:", err);
+    }
+  }
+
+  return result;
+}
