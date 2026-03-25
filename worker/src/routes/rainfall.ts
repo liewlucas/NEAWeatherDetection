@@ -14,7 +14,7 @@ export async function getStations(
   const config = parseRegionConfig(env);
   const result = await fetchRainfall();
   const nearby = filterNearbyStations(result.stations, config);
-  return json({ stations: nearby, apiTimestamp: result.timestamp });
+  return json({ stations: nearby, apiTimestamp: result.timestamp, checkedAt: new Date().toISOString() });
 }
 
 export async function postCheck(

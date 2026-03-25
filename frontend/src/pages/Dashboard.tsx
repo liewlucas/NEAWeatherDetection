@@ -17,6 +17,7 @@ interface Station {
 interface StationsResponse {
   stations: Station[];
   apiTimestamp: string;
+  checkedAt: string;
 }
 
 interface CheckResponse {
@@ -33,6 +34,7 @@ interface CheckResponse {
 export default function Dashboard() {
   const [stations, setStations] = useState<Station[]>([]);
   const [timestamp, setTimestamp] = useState("");
+  const [apiTimestamp, setApiTimestamp] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [checking, setChecking] = useState(false);
@@ -43,7 +45,8 @@ export default function Dashboard() {
     apiFetch<StationsResponse>("/api/rainfall/stations")
       .then((data) => {
         setStations(data.stations);
-        setTimestamp(data.apiTimestamp);
+        setTimestamp(data.checkedAt);
+        setApiTimestamp(data.apiTimestamp);
         setError(null);
       })
       .catch((err) => setError(err.message))
@@ -65,6 +68,7 @@ export default function Dashboard() {
       setCheckResult(result);
       setStations(result.nearbyStations);
       setTimestamp(new Date().toISOString());
+      setApiTimestamp(result.apiTimestamp);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Check failed");
     } finally {
@@ -87,7 +91,7 @@ export default function Dashboard() {
         </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-gray-800 rounded-lg p-4">
           <p className="text-gray-400 text-xs mb-1">Status</p>
           {loading ? (
@@ -105,6 +109,16 @@ export default function Dashboard() {
           <p className="text-sm">
             {timestamp
               ? new Date(timestamp).toLocaleString("en-SG", {
+                timeZone: "Asia/Singapore",
+              })
+              : "-"}
+          </p>
+        </div>
+        <div className="bg-gray-800 rounded-lg p-4">
+          <p className="text-gray-400 text-xs mb-1">NEA Data</p>
+          <p className="text-sm">
+            {apiTimestamp
+              ? new Date(apiTimestamp).toLocaleString("en-SG", {
                 timeZone: "Asia/Singapore",
               })
               : "-"}
