@@ -4,6 +4,8 @@ import { saveCapture } from "../services/capture-svc";
 import { sendTelegramStatus } from "../services/alert-svc";
 import { json } from "./router";
 
+import { addRegisteredChat } from "../services/chat-svc";
+
 export async function postWebhook(
     req: Request,
     env: Env
@@ -11,15 +13,28 @@ export async function postWebhook(
     try {
         const body: any = await req.json();
 
+        // 1. Detect new group members (bot added to group)
+        if (body.message && body.message.new_chat_members) {
+            const addedBot = body.message.new_chat_members.some((user: any) => user.is_bot);
+            if (addedBot) {
+                const chatId = body.message.chat.id.toString();
+                const chatName = body.message.chat.title || "Group Chat";
+                await addRegisteredChat(env, chatId, chatName);
+                console.log(`Registered new group chat: ${chatName} (${chatId})`);
+            }
+        }
+
         if (body.message && body.message.text) {
             const text = body.message.text.trim();
             const chatId = body.message.chat.id.toString();
+            const chatName = body.message.chat.title || body.message.chat.first_name || "User";
 
-            // Only respond to the configured chat group and specifically the /checknow command
-            if (
-                chatId === env.TELEGRAM_CHAT_ID &&
-                text.startsWith("/checknow")
-            ) {
+            if (text.startsWith("/start")) {
+                await addRegisteredChat(env, chatId, chatName);
+                console.log(`Registered new user chat: ${chatName} (${chatId})`);
+            }
+
+            if (text.startsWith("/checknow")) {
                 console.log("Received /checknow from Telegram webhook");
 
                 // Run the manual check logic
@@ -33,8 +48,8 @@ export async function postWebhook(
                     }
                 }
 
-                // Reply to the telegram user with the status
-                await sendTelegramStatus(env, result);
+                // Reply directly to the telegram user with the status
+                await sendTelegramStatus(env, result, chatId);
             }
         }
 

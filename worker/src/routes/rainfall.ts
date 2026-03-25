@@ -5,6 +5,7 @@ import { filterNearbyStations, fullCheck } from "../services/rain-detector";
 import { saveCapture } from "../services/capture-svc";
 import { sendTelegramStatus } from "../services/alert-svc";
 import { json } from "./router";
+import { getTargetTelegramChat, getRegisteredChats } from "../services/chat-svc";
 
 export async function getStations(
   _req: Request,
@@ -34,9 +35,19 @@ export async function postCheck(
     }
   }
 
-  // Always send a Telegram status update on manual check
+  // Always send a Telegram status update on manual check target
   try {
-    alertSent = await sendTelegramStatus(env, result);
+    const target = await getTargetTelegramChat(env);
+    if (target === "none") {
+      console.log("Manual Telegram alerts disabled by settings.");
+    } else if (target === "all") {
+      const chats = await getRegisteredChats(env);
+      const targets = chats.length > 0 ? chats.map((c: any) => c.id) : [env.TELEGRAM_CHAT_ID].filter(Boolean) as string[];
+      await Promise.allSettled(targets.map((id: string) => sendTelegramStatus(env, result, id)));
+      alertSent = true;
+    } else {
+      alertSent = await sendTelegramStatus(env, result, target);
+    }
   } catch (err) {
     console.error("sendTelegramStatus failed:", err);
   }

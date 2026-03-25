@@ -74,6 +74,35 @@ export default function Settings() {
               />
             </div>
           ))}
+
+          <div key="target_telegram_chat">
+            <label className="block text-xs text-gray-400 mb-1 flex items-center justify-between">
+              Target Telegram Chat
+            </label>
+            <select
+              value={settings.target_telegram_chat || "all"}
+              onChange={(e) =>
+                setSettings((s) => ({ ...s, target_telegram_chat: e.target.value }))
+              }
+              className="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-sm appearance-none"
+            >
+              <option value="all">Broadcast to All Groups</option>
+              <option value="none">Do Not Send (Silent)</option>
+              {(() => {
+                let chats: { id: string; name: string }[] = [];
+                try {
+                  if (settings.registered_chats) {
+                    chats = JSON.parse(settings.registered_chats);
+                  }
+                } catch (e) { }
+                return chats.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name} ({c.id})
+                  </option>
+                ));
+              })()}
+            </select>
+          </div>
           <div className="flex items-center gap-3">
             <button
               onClick={handleSave}
@@ -84,9 +113,8 @@ export default function Settings() {
             </button>
             {message && (
               <span
-                className={`text-sm ${
-                  message === "Saved" ? "text-green-400" : "text-red-400"
-                }`}
+                className={`text-sm ${message === "Saved" ? "text-green-400" : "text-red-400"
+                  }`}
               >
                 {message}
               </span>

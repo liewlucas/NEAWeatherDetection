@@ -20,9 +20,10 @@ export async function checkCooldown(
 
 export async function sendTelegramAlert(
   env: Env,
-  result: CheckResult
+  result: CheckResult,
+  chatId: string
 ): Promise<boolean> {
-  if (!env.TELEGRAM_BOT_TOKEN || !env.TELEGRAM_CHAT_ID) return false;
+  if (!env.TELEGRAM_BOT_TOKEN || !chatId) return false;
 
   const cooldownMin = parseInt(env.ALERT_COOLDOWN_MIN) || 30;
   const canSend = await checkCooldown(env.DB, cooldownMin);
@@ -58,7 +59,7 @@ export async function sendTelegramAlert(
 
     if (result.radarImage) {
       const form = new FormData();
-      form.append("chat_id", env.TELEGRAM_CHAT_ID);
+      form.append("chat_id", chatId);
       form.append("caption", message);
       form.append("parse_mode", "Markdown");
       form.append(
@@ -75,7 +76,7 @@ export async function sendTelegramAlert(
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          chat_id: env.TELEGRAM_CHAT_ID,
+          chat_id: chatId,
           text: message,
           parse_mode: "Markdown",
         }),
@@ -114,9 +115,10 @@ export async function sendTelegramAlert(
 /** Always sends a status update — used by manual "Check Now" button. No cooldown. */
 export async function sendTelegramStatus(
   env: Env,
-  result: CheckResult
+  result: CheckResult,
+  chatId: string
 ): Promise<boolean> {
-  if (!env.TELEGRAM_BOT_TOKEN || !env.TELEGRAM_CHAT_ID) return false;
+  if (!env.TELEGRAM_BOT_TOKEN || !chatId) return false;
 
   const sgt = new Date().toLocaleString("en-SG", {
     timeZone: "Asia/Singapore",
@@ -160,14 +162,14 @@ export async function sendTelegramStatus(
 
   try {
     const apiBase = `https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}`;
-    console.log("Sending Telegram status to chat:", env.TELEGRAM_CHAT_ID);
+    console.log("Sending Telegram status to chat:", chatId);
 
     let res: Response;
 
     if (result.radarImage) {
       // Send radar image with caption
       const form = new FormData();
-      form.append("chat_id", env.TELEGRAM_CHAT_ID);
+      form.append("chat_id", chatId);
       form.append("caption", message);
       form.append("parse_mode", "Markdown");
       form.append(
@@ -185,7 +187,7 @@ export async function sendTelegramStatus(
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          chat_id: env.TELEGRAM_CHAT_ID,
+          chat_id: chatId,
           text: message,
           parse_mode: "Markdown",
         }),

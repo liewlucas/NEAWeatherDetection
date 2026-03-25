@@ -9,6 +9,7 @@ import { getMonthlySummary } from "./routes/summary";
 import { getAlertLog } from "./routes/alerts";
 import { getSettings, putSettings } from "./routes/settings";
 import { postWebhook } from "./routes/telegram";
+import { getTargetTelegramChat, getRegisteredChats } from "./services/chat-svc";
 
 export type { Env };
 
@@ -44,7 +45,16 @@ export default {
         }
 
         try {
-          await sendTelegramAlert(env, result);
+          const target = await getTargetTelegramChat(env);
+          if (target === "none") {
+            console.log("Cron alerts disabled by settings.");
+          } else if (target === "all") {
+            const chats = await getRegisteredChats(env);
+            const targets = chats.length > 0 ? chats.map((c: any) => c.id) : [env.TELEGRAM_CHAT_ID].filter(Boolean) as string[];
+            await Promise.allSettled(targets.map((id: string) => sendTelegramAlert(env, result, id)));
+          } else {
+            await sendTelegramAlert(env, result, target);
+          }
         } catch (err) {
           console.error("Cron sendTelegramAlert failed:", err);
         }
