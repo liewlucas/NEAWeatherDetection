@@ -1,4 +1,4 @@
-# 🐜🌦️ antWeather - Cloudflare Worker Backend
+# antWeather - Cloudflare Worker Backend
 
 This directory contains the serverless backend code for the antWeather application, built with TypeScript and designed specifically for **Cloudflare Workers**.
 
@@ -6,13 +6,21 @@ This directory contains the serverless backend code for the antWeather applicati
 This worker heavily relies on Cloudflare's ecosystem:
 - **Workers**: Code execution (cron jobs + API serving).
 - **D1 Database**: A serverless SQLite database bound to the worker for storing captures, logs, and settings.
-- **R2 Storage**: Object storage bound to the worker for saving the `.png` radar image captures.
+- **R2 Storage**: Object storage bound to the worker for saving the `.png` radar image captures in date-based folders (`year/month/day/`).
 
 ## Features
-- **Cron Jobs**: The worker runs on a `*/5 * * * *` (every 5 minutes) schedule using Cloudflare Cron Triggers to pull data from the NEA API.
-- **REST API**: Provides endpoints (`/api/*`) for the React frontend, such as fetching historical captures, settings, and triggering manual rain checks.
-- **Telegram Webhook**: Exposes an endpoint (`/api/telegram/webhook`) to listen for Telegram Bot messages like `/checknow`.
-- **Image Processing**: Crops and overlays the raw radar imagery locally (using raw binary data processing) before saving to R2 and sending to Telegram.
+- **Cron Jobs**: Two scheduled triggers:
+  - `*/5 * * * *` — Rain detection every 5 minutes using NEA rainfall API + radar imagery.
+  - `0 23,11 * * *` — 3-day forecast briefing at 7am/7pm SGT, sent to all registered Telegram groups.
+- **REST API**: Provides endpoints (`/api/*`) for the React frontend, including historical captures, settings, monthly summaries, and manual rain checks.
+- **Telegram Webhook**: Exposes `/api/telegram/webhook` to handle:
+  - `/start` — Register a group for alerts
+  - `/checknow` — Trigger an instant rain check
+  - `@botname` mentions — AI weather queries via Gemini
+  - Replies to bot messages — Continue conversations without needing `@`
+- **AI Integration**: Gemini 2.0 Flash Lite for conversational weather queries and forecast summaries, fed with live station data and NEA forecasts (2-hour, 24-hour, 4-day).
+- **Image Processing**: Overlays the raw radar imagery with a map before saving to R2 and sending to Telegram.
+- **Multi-Group Support**: Manages multiple registered Telegram groups with per-group alert targeting.
 
 ## Environment Setup
 You need the following variables and secrets configured in a `.dev.vars` file (for local development) or securely uploaded to Cloudflare via `wrangler secret put <NAME>` (for production).
@@ -20,10 +28,12 @@ You need the following variables and secrets configured in a `.dev.vars` file (f
 ### Secrets
 - `TELEGRAM_BOT_TOKEN`: The bot token obtained from BotFather (e.g., `1234567890:AAH8Ymmy9T8Bb...`).
 - `TELEGRAM_CHAT_ID`: The ID of the user or group chat where alerts should be sent (e.g., `-5265318501`).
+- `GEMINI_API_KEY`: Google Gemini API key for AI weather bot features.
 
 ### Environment Config Variables (via `wrangler.toml`)
 - `REGION_CENTER_LAT`, `REGION_CENTER_LNG`: Center point of the monitored region.
 - `REGION_POLYGON`: A semicolon-separated string of lat/lng coordinate pairs defining the exact boundaries of the monitored area.
+- `TELEGRAM_BOT_USERNAME`: The bot's Telegram username (for mention detection).
 
 ## Local Development
 To develop and test the worker locally:
@@ -45,8 +55,13 @@ To develop and test the worker locally:
    ```
    This will start a local emulation of the worker, usually on `http://127.0.0.1:8787`.
 
+4. **Test cron manually**:
+   ```bash
+   curl "http://localhost:8787/__scheduled?cron=*/5+*+*+*+*"
+   ```
+
 ## Deployment
-This worker is automatically deployed using **GitHub Actions** on pushes to the `main` branch. 
+This worker is automatically deployed using **GitHub Actions** on pushes to the `main` branch.
 
 To deploy manually via CLI:
 ```bash
